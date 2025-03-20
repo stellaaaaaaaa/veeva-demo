@@ -4,7 +4,7 @@ from models import db, PageList, Object, ObjectField, PageListField, PageLayout,
 app = Flask(__name__)
 
 # 配置数据库 URI（这里假设使用 MySQL）
-app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:123456@localhost/local_demo?charset=utf8mb4'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql://root:123456@localhost/local-demo?charset=utf8mb4'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # 禁用对象修改追踪
 
 # 初始化 SQLAlchemy

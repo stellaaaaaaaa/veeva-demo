@@ -1,3 +1,5 @@
+import uuid
+
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
@@ -5,7 +7,7 @@ db = SQLAlchemy()
 
 class PageList(db.Model):
     __tablename__ = 'page_lists'
-    ID = db.Column(db.String(32), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     NAME = db.Column(db.String(255))
     LABEL = db.Column(db.String(255))
     DELETED = db.Column(db.String(1))
@@ -17,7 +19,7 @@ class PageList(db.Model):
 
 class Object(db.Model):
     __tablename__ = 'objects'
-    ID = db.Column(db.String(32), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     NAME = db.Column(db.String(255))
     LABEL = db.Column(db.String(255))
     TABLE_NAME = db.Column(db.String(255))
@@ -29,7 +31,7 @@ class Object(db.Model):
 
 class ObjectField(db.Model):
     __tablename__ = 'object_fields'
-    ID = db.Column(db.String(32), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     OBJECT_ID = db.Column(db.String(32), db.ForeignKey('objects.ID'), nullable=False)
     NAME = db.Column(db.String(255))
     LABEL = db.Column(db.String(255))
@@ -43,7 +45,7 @@ class ObjectField(db.Model):
 
 class PageListField(db.Model):
     __tablename__ = 'page_list_fields'
-    ID = db.Column(db.String(32), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     NAME = db.Column(db.String(255))
     OBJECT_FIELD_ID = db.Column(db.String(32), db.ForeignKey('object_fields.ID'), nullable=False)
     PAGE_LIST_ID = db.Column(db.String(32), db.ForeignKey('page_lists.ID'), nullable=False)
@@ -58,7 +60,7 @@ class PageListField(db.Model):
 
 class PageLayout(db.Model):
     __tablename__ = 'page_layouts'
-    ID = db.Column(db.String(32), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     NAME = db.Column(db.String(255))
     PAGE_LIST_ID = db.Column(db.String(32), db.ForeignKey('page_lists.ID'), nullable=False)
     DELETED = db.Column(db.String(1))
@@ -69,7 +71,7 @@ class PageLayout(db.Model):
 
 class PageLayoutField(db.Model):
     __tablename__ = 'page_layout_fields'
-    ID = db.Column(db.String(255), primary_key=True)
+    ID = db.Column(db.String(32), primary_key=True, default=lambda: uuid.uuid4().hex)
     NAME = db.Column(db.String(255))
     LABEL = db.Column(db.String(255))
     PAGE_LAYOUT_ID = db.Column(db.String(32), db.ForeignKey('page_layouts.ID'), nullable=False)
