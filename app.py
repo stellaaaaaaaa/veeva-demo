@@ -18,7 +18,7 @@ with app.app_context():
 # ---------------------------
 @app.route('/page_lists', methods=['GET'])
 def get_page_lists():
-    pages = PageList.query.filter_by(DELETED='N').all()
+    pages = PageList.query.filter_by(DELETED='0').all()
     result = [{'ID': p.ID, 'NAME': p.NAME, 'LABEL': p.LABEL} for p in pages]
     return jsonify(result)
 
@@ -37,7 +37,7 @@ def create_page_list():
 
 @app.route('/page_list/<id>', methods=['GET'])
 def get_page_list(id):
-    page = PageList.query.filter_by(ID=id, DELETED='N').first()
+    page = PageList.query.filter_by(ID=id, DELETED='0').first()
     if page:
         return jsonify({'ID': page.ID, 'NAME': page.NAME, 'LABEL': page.LABEL})
     return jsonify({'message': 'PageList not found'}), 404
@@ -46,7 +46,7 @@ def get_page_list(id):
 @app.route('/page_list/<id>', methods=['PUT'])
 def update_page_list(id):
     data = request.get_json()
-    page = PageList.query.filter_by(ID=id, DELETED='N').first()
+    page = PageList.query.filter_by(ID=id, DELETED='0').first()
     if not page:
         return jsonify({'message': 'PageList not found or deleted'}), 404
     page.NAME = data.get('NAME', page.NAME)
@@ -57,7 +57,7 @@ def update_page_list(id):
 
 @app.route('/page_list/<id>', methods=['DELETE'])
 def soft_delete_page_list(id):
-    page = PageList.query.filter_by(ID=id, DELETED='N').first()
+    page = PageList.query.filter_by(ID=id, DELETED='0').first()
     if not page:
         return jsonify({'message': 'PageList not found or already deleted'}), 404
     page.cascade_soft_delete()  # 调用集中处理的级联软删除
@@ -67,7 +67,7 @@ def soft_delete_page_list(id):
 
 @app.route('/page_list/restore/<id>', methods=['PUT'])
 def restore_page_list(id):
-    page = PageList.query.filter_by(ID=id, DELETED='Y').first()
+    page = PageList.query.filter_by(ID=id, DELETED='1').first()
     if not page:
         return jsonify({'message': 'PageList not found or not deleted'}), 404
     page.cascade_restore()  # 级联恢复
@@ -90,7 +90,7 @@ def permanent_delete_page_list(id):
 # ---------------------------
 @app.route('/objects', methods=['GET'])
 def get_objects():
-    objs = Object.query.filter_by(DELETED='N').all()
+    objs = Object.query.filter_by(DELETED='0').all()
     result = [{'ID': o.ID, 'NAME': o.NAME, 'LABEL': o.LABEL, 'TABLE_NAME': o.TABLE_NAME} for o in objs]
     return jsonify(result)
 
@@ -99,9 +99,9 @@ def get_objects():
 def create_object():
     data = request.get_json()
     obj = Object(
-        NAME=data.get('NAME'),
-        LABEL=data.get('LABEL'),
-        TABLE_NAME=data.get('TABLE_NAME')
+        NAME=data[0].get('NAME'),
+        LABEL=data[0].get('LABEL'),
+        TABLE_NAME=data[0].get('TABLE_NAME')
     )
     db.session.add(obj)
     db.session.commit()
@@ -110,7 +110,7 @@ def create_object():
 
 @app.route('/object/<id>', methods=['GET'])
 def get_object(id):
-    obj = Object.query.filter_by(ID=id, DELETED='N').first()
+    obj = Object.query.filter_by(ID=id, DELETED='0').first()
     if obj:
         return jsonify({'ID': obj.ID, 'NAME': obj.NAME, 'LABEL': obj.LABEL, 'TABLE_NAME': obj.TABLE_NAME})
     return jsonify({'message': 'Object not found'}), 404
@@ -119,19 +119,20 @@ def get_object(id):
 @app.route('/object/<id>', methods=['PUT'])
 def update_object(id):
     data = request.get_json()
-    obj = Object.query.filter_by(ID=id, DELETED='N').first()
+    obj = Object.query.filter_by(ID=id, DELETED='0').first()
     if not obj:
         return jsonify({'message': 'Object not found or deleted'}), 404
-    obj.NAME = data.get('NAME', obj.NAME)
-    obj.LABEL = data.get('LABEL', obj.LABEL)
-    obj.TABLE_NAME = data.get('TABLE_NAME', obj.TABLE_NAME)
+    obj.NAME = data[0].get('NAME', obj.NAME)
+    obj.LABEL = data[0].get('LABEL', obj.LABEL)
+    obj.TABLE_NAME = data[0].get('TABLE_NAME', obj.TABLE_NAME)
     db.session.commit()
-    return jsonify({'message': 'Object updated'})
+    obj = Object.query.filter_by(ID=id, DELETED='0').first()
+    return jsonify({'message': 'Object updated','ID': obj.ID, 'NAME': obj.NAME, 'LABEL': obj.LABEL, 'TABLE_NAME': obj.TABLE_NAME})
 
 
 @app.route('/object/<id>', methods=['DELETE'])
 def soft_delete_object(id):
-    obj = Object.query.filter_by(ID=id, DELETED='N').first()
+    obj = Object.query.filter_by(ID=id, DELETED='0').first()
     if not obj:
         return jsonify({'message': 'Object not found or already deleted'}), 404
     obj.cascade_soft_delete()
@@ -141,7 +142,7 @@ def soft_delete_object(id):
 
 @app.route('/object/restore/<id>', methods=['PUT'])
 def restore_object(id):
-    obj = Object.query.filter_by(ID=id, DELETED='Y').first()
+    obj = Object.query.filter_by(ID=id, DELETED='1').first()
     if not obj:
         return jsonify({'message': 'Object not found or not deleted'}), 404
     obj.cascade_restore()
@@ -164,7 +165,7 @@ def permanent_delete_object(id):
 # ---------------------------
 @app.route('/object_fields', methods=['GET'])
 def get_object_fields():
-    fields = ObjectField.query.filter_by(DELETED='N').all()
+    fields = ObjectField.query.filter_by(DELETED='0').all()
     result = [{'ID': f.ID, 'OBJECT_ID': f.OBJECT_ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'TYPE': f.TYPE} for f in fields]
     return jsonify(result)
 
@@ -185,7 +186,7 @@ def create_object_field():
 
 @app.route('/object_field/<id>', methods=['GET'])
 def get_object_field(id):
-    field = ObjectField.query.filter_by(ID=id, DELETED='N').first()
+    field = ObjectField.query.filter_by(ID=id, DELETED='0').first()
     if field:
         return jsonify({'ID': field.ID, 'OBJECT_ID': field.OBJECT_ID, 'NAME': field.NAME, 'LABEL': field.LABEL, 'TYPE': field.TYPE})
     return jsonify({'message': 'ObjectField not found'}), 404
@@ -194,7 +195,7 @@ def get_object_field(id):
 @app.route('/object_field/<id>', methods=['PUT'])
 def update_object_field(id):
     data = request.get_json()
-    field = ObjectField.query.filter_by(ID=id, DELETED='N').first()
+    field = ObjectField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'ObjectField not found or deleted'}), 404
     field.NAME = data.get('NAME', field.NAME)
@@ -206,7 +207,7 @@ def update_object_field(id):
 
 @app.route('/object_field/<id>', methods=['DELETE'])
 def soft_delete_object_field(id):
-    field = ObjectField.query.filter_by(ID=id, DELETED='N').first()
+    field = ObjectField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'ObjectField not found or already deleted'}), 404
     field.cascade_soft_delete()
@@ -216,7 +217,7 @@ def soft_delete_object_field(id):
 
 @app.route('/object_field/restore/<id>', methods=['PUT'])
 def restore_object_field(id):
-    field = ObjectField.query.filter_by(ID=id, DELETED='Y').first()
+    field = ObjectField.query.filter_by(ID=id, DELETED='1').first()
     if not field:
         return jsonify({'message': 'ObjectField not found or not deleted'}), 404
     field.cascade_restore()
@@ -239,7 +240,7 @@ def permanent_delete_object_field(id):
 # ---------------------------
 @app.route('/page_list_fields', methods=['GET'])
 def get_page_list_fields():
-    fields = PageListField.query.filter_by(DELETED='N').all()
+    fields = PageListField.query.filter_by(DELETED='0').all()
     result = [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in fields]
     return jsonify(result)
 
@@ -261,7 +262,7 @@ def create_page_list_field():
 
 @app.route('/page_list_field/<id>', methods=['GET'])
 def get_page_list_field(id):
-    field = PageListField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageListField.query.filter_by(ID=id, DELETED='0').first()
     if field:
         return jsonify({'ID': field.ID, 'NAME': field.NAME, 'OBJECT_FIELD_ID': field.OBJECT_FIELD_ID, 'PAGE_LIST_ID': field.PAGE_LIST_ID})
     return jsonify({'message': 'PageListField not found'}), 404
@@ -270,7 +271,7 @@ def get_page_list_field(id):
 @app.route('/page_list_field/<id>', methods=['PUT'])
 def update_page_list_field(id):
     data = request.get_json()
-    field = PageListField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageListField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageListField not found or deleted'}), 404
     field.NAME = data.get('NAME', field.NAME)
@@ -282,7 +283,7 @@ def update_page_list_field(id):
 
 @app.route('/page_list_field/<id>', methods=['DELETE'])
 def soft_delete_page_list_field(id):
-    field = PageListField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageListField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageListField not found or already deleted'}), 404
     field.cascade_soft_delete()
@@ -292,7 +293,7 @@ def soft_delete_page_list_field(id):
 
 @app.route('/page_list_field/restore/<id>', methods=['PUT'])
 def restore_page_list_field(id):
-    field = PageListField.query.filter_by(ID=id, DELETED='Y').first()
+    field = PageListField.query.filter_by(ID=id, DELETED='1').first()
     if not field:
         return jsonify({'message': 'PageListField not found or not deleted'}), 404
     field.cascade_restore()
@@ -315,7 +316,7 @@ def permanent_delete_page_list_field(id):
 # ---------------------------
 @app.route('/page_layouts', methods=['GET'])
 def get_page_layouts():
-    layouts = PageLayout.query.filter_by(DELETED='N').all()
+    layouts = PageLayout.query.filter_by(DELETED='0').all()
     result = [{'ID': l.ID, 'NAME': l.NAME, 'PAGE_LIST_ID': l.PAGE_LIST_ID} for l in layouts]
     return jsonify(result)
 
@@ -334,7 +335,7 @@ def create_page_layout():
 
 @app.route('/page_layout/<id>', methods=['GET'])
 def get_page_layout(id):
-    layout = PageLayout.query.filter_by(ID=id, DELETED='N').first()
+    layout = PageLayout.query.filter_by(ID=id, DELETED='0').first()
     if layout:
         return jsonify({'ID': layout.ID, 'NAME': layout.NAME, 'PAGE_LIST_ID': layout.PAGE_LIST_ID})
     return jsonify({'message': 'PageLayout not found'}), 404
@@ -343,7 +344,7 @@ def get_page_layout(id):
 @app.route('/page_layout/<id>', methods=['PUT'])
 def update_page_layout(id):
     data = request.get_json()
-    layout = PageLayout.query.filter_by(ID=id, DELETED='N').first()
+    layout = PageLayout.query.filter_by(ID=id, DELETED='0').first()
     if not layout:
         return jsonify({'message': 'PageLayout not found or deleted'}), 404
     layout.NAME = data.get('NAME', layout.NAME)
@@ -353,7 +354,7 @@ def update_page_layout(id):
 
 @app.route('/page_layout/<id>', methods=['DELETE'])
 def soft_delete_page_layout(id):
-    layout = PageLayout.query.filter_by(ID=id, DELETED='N').first()
+    layout = PageLayout.query.filter_by(ID=id, DELETED='0').first()
     if not layout:
         return jsonify({'message': 'PageLayout not found or already deleted'}), 404
     layout.cascade_soft_delete()
@@ -363,7 +364,7 @@ def soft_delete_page_layout(id):
 
 @app.route('/page_layout/restore/<id>', methods=['PUT'])
 def restore_page_layout(id):
-    layout = PageLayout.query.filter_by(ID=id, DELETED='Y').first()
+    layout = PageLayout.query.filter_by(ID=id, DELETED='1').first()
     if not layout:
         return jsonify({'message': 'PageLayout not found or not deleted'}), 404
     layout.cascade_restore()
@@ -386,7 +387,7 @@ def permanent_delete_page_layout(id):
 # ---------------------------
 @app.route('/page_layout_fields', methods=['GET'])
 def get_page_layout_fields():
-    fields = PageLayoutField.query.filter_by(DELETED='N').all()
+    fields = PageLayoutField.query.filter_by(DELETED='0').all()
     result = [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields]
     return jsonify(result)
 
@@ -408,7 +409,7 @@ def create_page_layout_field():
 
 @app.route('/page_layout_field/<id>', methods=['GET'])
 def get_page_layout_field(id):
-    field = PageLayoutField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageLayoutField.query.filter_by(ID=id, DELETED='0').first()
     if field:
         return jsonify({'ID': field.ID, 'NAME': field.NAME, 'LABEL': field.LABEL, 'PAGE_LAYOUT_ID': field.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': field.OBJECT_FIELD_ID})
     return jsonify({'message': 'PageLayoutField not found'}), 404
@@ -417,7 +418,7 @@ def get_page_layout_field(id):
 @app.route('/page_layout_field/<id>', methods=['PUT'])
 def update_page_layout_field(id):
     data = request.get_json()
-    field = PageLayoutField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageLayoutField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageLayoutField not found or deleted'}), 404
     field.NAME = data.get('NAME', field.NAME)
@@ -429,7 +430,7 @@ def update_page_layout_field(id):
 
 @app.route('/page_layout_field/<id>', methods=['DELETE'])
 def soft_delete_page_layout_field(id):
-    field = PageLayoutField.query.filter_by(ID=id, DELETED='N').first()
+    field = PageLayoutField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageLayoutField not found or already deleted'}), 404
     field.cascade_soft_delete()
@@ -439,7 +440,7 @@ def soft_delete_page_layout_field(id):
 
 @app.route('/page_layout_field/restore/<id>', methods=['PUT'])
 def restore_page_layout_field(id):
-    field = PageLayoutField.query.filter_by(ID=id, DELETED='Y').first()
+    field = PageLayoutField.query.filter_by(ID=id, DELETED='1').first()
     if not field:
         return jsonify({'message': 'PageLayoutField not found or not deleted'}), 404
     field.cascade_restore()
