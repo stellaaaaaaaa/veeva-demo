@@ -27,8 +27,8 @@ def get_page_lists():
 def create_page_list():
     data = request.get_json()
     page = PageList(
-        NAME=data.get('NAME'),
-        LABEL=data.get('LABEL')
+        NAME=data[0].get('NAME'),
+        LABEL=data[0].get('LABEL')
     )
     db.session.add(page)
     db.session.commit()
@@ -49,8 +49,8 @@ def update_page_list(id):
     page = PageList.query.filter_by(ID=id, DELETED='0').first()
     if not page:
         return jsonify({'message': 'PageList not found or deleted'}), 404
-    page.NAME = data.get('NAME', page.NAME)
-    page.LABEL = data.get('LABEL', page.LABEL)
+    page.NAME = data[0].get('NAME', page.NAME)
+    page.LABEL = data[0].get('LABEL', page.LABEL)
     db.session.commit()
     return jsonify({'message': 'PageList updated'})
 
@@ -174,10 +174,10 @@ def get_object_fields():
 def create_object_field():
     data = request.get_json()
     field = ObjectField(
-        OBJECT_ID=data.get('OBJECT_ID'),
-        NAME=data.get('NAME'),
-        LABEL=data.get('LABEL'),
-        TYPE=data.get('TYPE')
+        OBJECT_ID=data[0].get('OBJECT_ID'),
+        NAME=data[0].get('NAME'),
+        LABEL=data[0].get('LABEL'),
+        TYPE=data[0].get('TYPE')
     )
     db.session.add(field)
     db.session.commit()
@@ -198,11 +198,15 @@ def update_object_field(id):
     field = ObjectField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'ObjectField not found or deleted'}), 404
-    field.NAME = data.get('NAME', field.NAME)
-    field.LABEL = data.get('LABEL', field.LABEL)
-    field.TYPE = data.get('TYPE', field.TYPE)
+    field.NAME = data[0].get('NAME', field.NAME)
+    field.LABEL = data[0].get('LABEL', field.LABEL)
+    field.TYPE = data[0].get('TYPE', field.TYPE)
     db.session.commit()
-    return jsonify({'message': 'ObjectField updated'})
+    # return jsonify({'message': 'ObjectField updated'})
+    obj_field = ObjectField.query.filter_by(ID=id, DELETED='0').first()
+    return jsonify({'message': 'Object_field updated','ID': obj_field.ID, 'OBJECT_ID': obj_field.OBJECT_ID,'NAME': obj_field.NAME, 'LABEL': obj_field.LABEL, 'TYPE': obj_field.TYPE})
+
+
 
 
 @app.route('/object_field/<id>', methods=['DELETE'])
@@ -249,11 +253,11 @@ def get_page_list_fields():
 def create_page_list_field():
     data = request.get_json()
     field = PageListField(
-        NAME=data.get('NAME'),
-        OBJECT_FIELD_ID=data.get('OBJECT_FIELD_ID'),
-        PAGE_LIST_ID=data.get('PAGE_LIST_ID'),
-        HIDDEN=data.get('HIDDEN'),
-        TYPE=data.get('TYPE')
+        NAME=data[0].get('NAME'),
+        OBJECT_FIELD_ID=data[0].get('OBJECT_FIELD_ID'),
+        PAGE_LIST_ID=data[0].get('PAGE_LIST_ID'),
+        HIDDEN=data[0].get('HIDDEN'),
+        TYPE=data[0].get('TYPE')
     )
     db.session.add(field)
     db.session.commit()
@@ -274,9 +278,9 @@ def update_page_list_field(id):
     field = PageListField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageListField not found or deleted'}), 404
-    field.NAME = data.get('NAME', field.NAME)
-    field.HIDDEN = data.get('HIDDEN', field.HIDDEN)
-    field.TYPE = data.get('TYPE', field.TYPE)
+    field.NAME = data[0].get('NAME', field.NAME)
+    field.HIDDEN = data[0].get('HIDDEN', field.HIDDEN)
+    field.TYPE = data[0].get('TYPE', field.TYPE)
     db.session.commit()
     return jsonify({'message': 'PageListField updated'})
 
@@ -325,8 +329,8 @@ def get_page_layouts():
 def create_page_layout():
     data = request.get_json()
     layout = PageLayout(
-        NAME=data.get('NAME'),
-        PAGE_LIST_ID=data.get('PAGE_LIST_ID')
+        NAME=data[0].get('NAME'),
+        PAGE_LIST_ID=data[0].get('PAGE_LIST_ID')
     )
     db.session.add(layout)
     db.session.commit()
@@ -347,7 +351,7 @@ def update_page_layout(id):
     layout = PageLayout.query.filter_by(ID=id, DELETED='0').first()
     if not layout:
         return jsonify({'message': 'PageLayout not found or deleted'}), 404
-    layout.NAME = data.get('NAME', layout.NAME)
+    layout.NAME = data[0].get('NAME', layout.NAME)
     db.session.commit()
     return jsonify({'message': 'PageLayout updated'})
 
@@ -396,11 +400,11 @@ def get_page_layout_fields():
 def create_page_layout_field():
     data = request.get_json()
     field = PageLayoutField(
-        NAME=data.get('NAME'),
-        LABEL=data.get('LABEL'),
-        PAGE_LAYOUT_ID=data.get('PAGE_LAYOUT_ID'),
-        OBJECT_FIELD_ID=data.get('OBJECT_FIELD_ID'),
-        TYPE=data.get('TYPE')
+        NAME=data[0].get('NAME'),
+        LABEL=data[0].get('LABEL'),
+        PAGE_LAYOUT_ID=data[0].get('PAGE_LAYOUT_ID'),
+        OBJECT_FIELD_ID=data[0].get('OBJECT_FIELD_ID'),
+        TYPE=data[0].get('TYPE')
     )
     db.session.add(field)
     db.session.commit()
@@ -421,9 +425,9 @@ def update_page_layout_field(id):
     field = PageLayoutField.query.filter_by(ID=id, DELETED='0').first()
     if not field:
         return jsonify({'message': 'PageLayoutField not found or deleted'}), 404
-    field.NAME = data.get('NAME', field.NAME)
-    field.LABEL = data.get('LABEL', field.LABEL)
-    field.TYPE = data.get('TYPE', field.TYPE)
+    field.NAME = data[0].get('NAME', field.NAME)
+    field.LABEL = data[0].get('LABEL', field.LABEL)
+    field.TYPE = data[0].get('TYPE', field.TYPE)
     db.session.commit()
     return jsonify({'message': 'PageLayoutField updated'})
 
