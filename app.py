@@ -2,10 +2,11 @@
 from flask import Flask, request, jsonify
 from config import Config
 from models import db, PageList, Object, ObjectField, PageListField, PageLayout, PageLayoutField
-import uuid
+from flask_cors import CORS
 
 app = Flask(__name__)
 app.config.from_object(Config)
+CORS(app, supports_credentials=True)  # 允许跨域请求
 db.init_app(app)
 
 # 在应用上下文中创建所有表（仅首次运行时）
@@ -23,7 +24,7 @@ def get_page_lists():
     # return jsonify(result)
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
@@ -110,7 +111,7 @@ def permanent_delete_page_list(id):
 def get_objects():
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
@@ -208,7 +209,7 @@ def get_object_fields():
     # return jsonify(result)
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
@@ -307,7 +308,7 @@ def get_page_list_fields():
     # return jsonify(result)
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
@@ -405,7 +406,7 @@ def get_page_layouts():
     # return jsonify(result)
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
@@ -497,7 +498,7 @@ def get_page_layout_fields():
     # return jsonify(result)
     # 获取分页参数（默认第1页，每页10条）
     page = request.args.get('page', 1, type=int)
-    page_size = request.args.get('page_size', 1, type=int)
+    page_size = request.args.get('page_size', 20, type=int)
     # 计算偏移量
     offset = (page - 1) * page_size
 
