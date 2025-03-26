@@ -115,7 +115,7 @@ def get_objects():
     offset = (page - 1) * page_size
 
     # 基础查询（过滤已删除项）
-    query = PageList.query.filter_by(DELETED='0')
+    query = Object.query.filter_by(DELETED='0')
 
     # 分页查询
     paginated_query = query.offset(offset).limit(page_size)
@@ -213,7 +213,7 @@ def get_object_fields():
     offset = (page - 1) * page_size
 
     # 基础查询（过滤已删除项）
-    query = PageList.query.filter_by(DELETED='0')
+    query = ObjectField.query.filter_by(DELETED='0')
 
     # 分页查询
     paginated_query = query.offset(offset).limit(page_size)
@@ -312,7 +312,7 @@ def get_page_list_fields():
     offset = (page - 1) * page_size
 
     # 基础查询（过滤已删除项）
-    query = PageList.query.filter_by(DELETED='0')
+    query = PageListField.query.filter_by(DELETED='0')
 
     # 分页查询
     paginated_query = query.offset(offset).limit(page_size)
@@ -410,7 +410,7 @@ def get_page_layouts():
     offset = (page - 1) * page_size
 
     # 基础查询（过滤已删除项）
-    query = PageList.query.filter_by(DELETED='0')
+    query = PageLayout.query.filter_by(DELETED='0')
 
     # 分页查询
     paginated_query = query.offset(offset).limit(page_size)
@@ -502,7 +502,7 @@ def get_page_layout_fields():
     offset = (page - 1) * page_size
 
     # 基础查询（过滤已删除项）
-    query = PageList.query.filter_by(DELETED='0')
+    query = PageLayoutField.query.filter_by(DELETED='0')
 
     # 分页查询
     paginated_query = query.offset(offset).limit(page_size)
