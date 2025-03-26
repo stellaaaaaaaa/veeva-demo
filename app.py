@@ -18,11 +18,29 @@ with app.app_context():
 # ---------------------------
 @app.route('/page_lists', methods=['GET'])
 def get_page_lists():
-    pages = PageList.query.filter_by(DELETED='0').all()
-    result = [{'ID': p.ID, 'NAME': p.NAME, 'LABEL': p.LABEL} for p in pages]
-    return jsonify(result)
+    # pages = PageList.query.filter_by(DELETED='0').all()
+    # result = [{'ID': p.ID, 'NAME': p.NAME, 'LABEL': p.LABEL} for p in pages]
+    # return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
 
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
 
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+    return jsonify({
+        'items': [{'ID': p.ID, 'NAME': p.NAME, 'LABEL': p.LABEL} for p in pages],
+        'total': total
+    })
 @app.route('/page_list', methods=['POST'])
 def create_page_list():
     data = request.get_json()
@@ -90,9 +108,29 @@ def permanent_delete_page_list(id):
 # ---------------------------
 @app.route('/objects', methods=['GET'])
 def get_objects():
-    objs = Object.query.filter_by(DELETED='0').all()
-    result = [{'ID': o.ID, 'NAME': o.NAME, 'LABEL': o.LABEL, 'TABLE_NAME': o.TABLE_NAME} for o in objs]
-    return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
+
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
+
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+    # objs = Object.query.filter_by(DELETED='0').all()
+    return jsonify({
+        'items': [{'ID': o.ID, 'NAME': o.NAME, 'LABEL': o.LABEL, 'TABLE_NAME': o.TABLE_NAME} for o in pages],
+        'total': total
+    })
+    # result = [{'ID': o.ID, 'NAME': o.NAME, 'LABEL': o.LABEL, 'TABLE_NAME': o.TABLE_NAME} for o in objs]
+    # return jsonify(result)
 
 
 @app.route('/object', methods=['POST'])
@@ -165,9 +203,29 @@ def permanent_delete_object(id):
 # ---------------------------
 @app.route('/object_fields', methods=['GET'])
 def get_object_fields():
-    fields = ObjectField.query.filter_by(DELETED='0').all()
-    result = [{'ID': f.ID, 'OBJECT_ID': f.OBJECT_ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'TYPE': f.TYPE} for f in fields]
-    return jsonify(result)
+    # fields = ObjectField.query.filter_by(DELETED='0').all()
+    # result = [{'ID': f.ID, 'OBJECT_ID': f.OBJECT_ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'TYPE': f.TYPE} for f in fields]
+    # return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
+
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
+
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+    return jsonify({
+        'items': [{'ID': f.ID, 'OBJECT_ID': f.OBJECT_ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'TYPE': f.TYPE} for f in pages],
+        'total': total
+    })
 
 
 @app.route('/object_field', methods=['POST'])
@@ -244,9 +302,31 @@ def permanent_delete_object_field(id):
 # ---------------------------
 @app.route('/page_list_fields', methods=['GET'])
 def get_page_list_fields():
-    fields = PageListField.query.filter_by(DELETED='0').all()
-    result = [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in fields]
-    return jsonify(result)
+    # fields = PageListField.query.filter_by(DELETED='0').all()
+    # result = [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in fields]
+    # return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
+
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
+
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+
+
+    return jsonify({
+        'items': [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in pages],
+        'total': total
+    })
 
 
 @app.route('/page_list_field', methods=['POST'])
@@ -320,9 +400,30 @@ def permanent_delete_page_list_field(id):
 # ---------------------------
 @app.route('/page_layouts', methods=['GET'])
 def get_page_layouts():
-    layouts = PageLayout.query.filter_by(DELETED='0').all()
-    result = [{'ID': l.ID, 'NAME': l.NAME, 'PAGE_LIST_ID': l.PAGE_LIST_ID} for l in layouts]
-    return jsonify(result)
+    # layouts = PageLayout.query.filter_by(DELETED='0').all()
+    # result = [{'ID': l.ID, 'NAME': l.NAME, 'PAGE_LIST_ID': l.PAGE_LIST_ID} for l in layouts]
+    # return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
+
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
+
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+    return jsonify({
+        'items': [{'ID': l.ID, 'NAME': l.NAME, 'PAGE_LIST_ID': l.PAGE_LIST_ID} for l in
+                  pages],
+        'total': total
+    })
 
 
 @app.route('/page_layout', methods=['POST'])
@@ -391,9 +492,29 @@ def permanent_delete_page_layout(id):
 # ---------------------------
 @app.route('/page_layout_fields', methods=['GET'])
 def get_page_layout_fields():
-    fields = PageLayoutField.query.filter_by(DELETED='0').all()
-    result = [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields]
-    return jsonify(result)
+    # fields = PageLayoutField.query.filter_by(DELETED='0').all()
+    # result = [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields]
+    # return jsonify(result)
+    # 获取分页参数（默认第1页，每页10条）
+    page = request.args.get('page', 1, type=int)
+    page_size = request.args.get('page_size', 1, type=int)
+    # 计算偏移量
+    offset = (page - 1) * page_size
+
+    # 基础查询（过滤已删除项）
+    query = PageList.query.filter_by(DELETED='0')
+
+    # 分页查询
+    paginated_query = query.offset(offset).limit(page_size)
+    pages = paginated_query.all()
+
+    # 获取总记录数
+    total = query.count()
+    # 返回分页结果
+    return jsonify({
+        'items': [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in pages],
+        'total': total
+    })
 
 
 @app.route('/page_layout_field', methods=['POST'])
