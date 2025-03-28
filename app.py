@@ -278,13 +278,17 @@ def search_object_fields():
     page_size = request.args.get('page_size', 20, type=int)
     offset = (page - 1) * page_size
 
-    field_id = request.args.get('id')
+    object_id = request.args.get('obj_id')
     name = request.args.get('name')
 
-    if field_id:
-        query = ObjectField.query.filter_by(ID=field_id, DELETED='0')
-    elif name:
-        query = ObjectField.query.filter(ObjectField.NAME.like(f'%{name}%')).filter(ObjectField.DELETED == '0')
+    if name:
+        query = ObjectField.query.filter(
+            ObjectField.NAME.like(f'%{name}%'),
+            ObjectField.OBJECT_ID == object_id,
+            ObjectField.DELETED == '0'
+        )
+    elif object_id:
+        query = ObjectField.query.filter_by(OBJECT_ID=object_id, DELETED='0')
     else:
         return jsonify({'message': 'Missing id or name parameter'}), 400
 
@@ -419,13 +423,21 @@ def search_page_list_fields():
     page_size = request.args.get('page_size', 20, type=int)
     offset = (page - 1) * page_size
 
-    field_id = request.args.get('id')
+    pagelist_id = request.args.get('pagelist_id')
     name = request.args.get('name')
+    if name:
+        query = PageListField.query.filter(
+            PageListField.NAME.like(f'%{name}%'),
+            PageListField.OBJECT_ID == pagelist_id,
+            PageListField.DELETED == '0'
+        )
+    elif pagelist_id:
+        query = ObjectField.query.filter_by(PAGE_LIST_ID=pagelist_id, DELETED='0')
 
-    if field_id:
-        query = PageListField.query.filter_by(ID=field_id, DELETED='0')
-    elif name:
-        query = PageListField.query.filter(PageListField.NAME.like(f'%{name}%')).filter(PageListField.DELETED == '0')
+    # if field_id:
+    #     query = PageListField.query.filter_by(ID=field_id, DELETED='0')
+    # elif name:
+    #     query = PageListField.query.filter(PageListField.NAME.like(f'%{name}%')).filter(PageListField.DELETED == '0')
     else:
         return jsonify({'message': 'Missing id or name parameter'}), 400
 
@@ -533,13 +545,21 @@ def search_page_layouts():
     page_size = request.args.get('page_size', 20, type=int)
     offset = (page - 1) * page_size
 
-    layout_id = request.args.get('id')
+    pagelist_id = request.args.get('id')
     name = request.args.get('name')
+    if name:
+        query = PageLayout.query.filter(
+            PageLayout.NAME.like(f'%{name}%'),
+            PageLayout.OBJECT_ID == pagelist_id,
+            PageLayout.DELETED == '0'
+        )
+    elif pagelist_id:
+        query = PageLayout.query.filter_by(PAGE_LIST_ID=pagelist_id, DELETED='0')
 
-    if layout_id:
-        query = PageLayout.query.filter_by(ID=layout_id, DELETED='0')
-    elif name:
-        query = PageLayout.query.filter(PageLayout.NAME.like(f'%{name}%')).filter(PageLayout.DELETED == '0')
+    # if layout_id:
+    #     query = PageLayout.query.filter_by(ID=layout_id, DELETED='0')
+    # elif name:
+    #     query = PageLayout.query.filter(PageLayout.NAME.like(f'%{name}%')).filter(PageLayout.DELETED == '0')
     else:
         return jsonify({'message': 'Missing id or name parameter'}), 400
 
@@ -641,13 +661,22 @@ def search_page_layout_fields():
     page_size = request.args.get('page_size', 20, type=int)
     offset = (page - 1) * page_size
 
-    field_id = request.args.get('id')
+    pagelayout_id = request.args.get('pagelayout_id')
     name = request.args.get('name')
 
-    if field_id:
-        query = PageLayoutField.query.filter_by(ID=field_id, DELETED='0')
-    elif name:
-        query = PageLayoutField.query.filter(PageLayoutField.NAME.like(f'%{name}%')).filter(PageLayoutField.DELETED == '0')
+    if name:
+        query = PageLayoutField.query.filter(
+            PageLayoutField.NAME.like(f'%{name}%'),
+            PageLayoutField.OBJECT_ID == pagelayout_id,
+            PageLayoutField.DELETED == '0'
+        )
+    elif pagelayout_id:
+        query = ObjectField.query.filter_by(PAGE_LAYOUT_ID=pagelayout_id, DELETED='0')
+
+    # if field_id:
+    #     query = PageLayoutField.query.filter_by(ID=field_id, DELETED='0')
+    # elif name:
+    #     query = PageLayoutField.query.filter(PageLayoutField.NAME.like(f'%{name}%')).filter(PageLayoutField.DELETED == '0')
     else:
         return jsonify({'message': 'Missing id or name parameter'}), 400
 
