@@ -272,6 +272,13 @@ def get_object_fields():
         'total': total
     })
 
+@app.route('/object_fields/all', methods=['GET'])
+def get_object_fields_all():
+    fields = ObjectField.query.filter_by(DELETED='0')
+    return jsonify({
+        'items': [{'ID': f.ID, 'OBJECT_ID': f.OBJECT_ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'TYPE': f.TYPE} for f in fields],
+    })
+
 @app.route('/object_field/search', methods=['GET'])
 def search_object_fields():
     page = request.args.get('page', 1, type=int)
@@ -413,7 +420,7 @@ def get_page_list_fields():
 
     total = query.count()
     return jsonify({
-        'items': [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in fields],
+        'items': [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID,'HIDDEN': f.HIDDEN,'TYPE': f.TYPE} for f in fields],
         'total': total
     })
 
@@ -428,11 +435,11 @@ def search_page_list_fields():
     if name:
         query = PageListField.query.filter(
             PageListField.NAME.like(f'%{name}%'),
-            PageListField.OBJECT_ID == pagelist_id,
+            PageListField.PAGE_LIST_ID == pagelist_id,
             PageListField.DELETED == '0'
         )
     elif pagelist_id:
-        query = ObjectField.query.filter_by(PAGE_LIST_ID=pagelist_id, DELETED='0')
+        query = PageListField.query.filter_by(PAGE_LIST_ID=pagelist_id, DELETED='0')
 
     # if field_id:
     #     query = PageListField.query.filter_by(ID=field_id, DELETED='0')
@@ -447,7 +454,8 @@ def search_page_list_fields():
 
     total = query.count()
     return jsonify({
-        'items': [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID} for f in fields],
+        'items': [{'ID': f.ID, 'NAME': f.NAME, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID, 'PAGE_LIST_ID': f.PAGE_LIST_ID,
+                   'HIDDEN': f.HIDDEN,'TYPE': f.TYPE} for f in fields],
         'total': total
     })
 
@@ -545,12 +553,12 @@ def search_page_layouts():
     page_size = request.args.get('page_size', 20, type=int)
     offset = (page - 1) * page_size
 
-    pagelist_id = request.args.get('id')
+    pagelist_id = request.args.get('pagelist_id')
     name = request.args.get('name')
     if name:
         query = PageLayout.query.filter(
             PageLayout.NAME.like(f'%{name}%'),
-            PageLayout.OBJECT_ID == pagelist_id,
+            PageLayout.PAGE_LIST_ID == pagelist_id,
             PageLayout.DELETED == '0'
         )
     elif pagelist_id:
@@ -651,7 +659,8 @@ def get_page_layout_fields():
 
     total = query.count()
     return jsonify({
-        'items': [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields],
+        'items': [{'ID': f.ID, 'TYPE': f.TYPE, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID,
+                   'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields],
         'total': total
     })
 
@@ -667,11 +676,11 @@ def search_page_layout_fields():
     if name:
         query = PageLayoutField.query.filter(
             PageLayoutField.NAME.like(f'%{name}%'),
-            PageLayoutField.OBJECT_ID == pagelayout_id,
+            PageLayoutField.PAGE_LAYOUT_ID == pagelayout_id,
             PageLayoutField.DELETED == '0'
         )
     elif pagelayout_id:
-        query = ObjectField.query.filter_by(PAGE_LAYOUT_ID=pagelayout_id, DELETED='0')
+        query = PageLayoutField.query.filter_by(PAGE_LAYOUT_ID=pagelayout_id, DELETED='0')
 
     # if field_id:
     #     query = PageLayoutField.query.filter_by(ID=field_id, DELETED='0')
@@ -686,7 +695,7 @@ def search_page_layout_fields():
 
     total = query.count()
     return jsonify({
-        'items': [{'ID': f.ID, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields],
+        'items': [{'ID': f.ID, 'TYPE': f.TYPE, 'NAME': f.NAME, 'LABEL': f.LABEL, 'PAGE_LAYOUT_ID': f.PAGE_LAYOUT_ID, 'OBJECT_FIELD_ID': f.OBJECT_FIELD_ID} for f in fields],
         'total': total
     })
 
