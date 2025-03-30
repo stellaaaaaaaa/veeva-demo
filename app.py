@@ -1,9 +1,11 @@
 # app.py
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from config import Config
 from models import db, PageList, Object, ObjectField, PageListField, PageLayout, PageLayoutField
 from flask_cors import CORS
-
+from io import StringIO
+import csv
+import chardet
 app = Flask(__name__)
 app.config.from_object(Config)
 CORS(app, supports_credentials=True)  # 允许跨域请求
@@ -766,6 +768,407 @@ def permanent_delete_page_layout_field(id):
     db.session.commit()
     return jsonify({'message': 'PageLayoutField permanently deleted'})
 
+def get_decoded_stream(file):
+    """
+    读取上传的文件，自动检测编码后返回 StringIO 对象。
+    """
+    raw_data = file.read()
+    detected = chardet.detect(raw_data)
+    encoding = detected.get('encoding')
+    if not encoding:
+        encoding = 'utf-8'
+    decoded_data = raw_data.decode(encoding, errors='replace')
+    return StringIO(decoded_data, newline=None)
 
+
+def import_csv_common(model_cls, field_list, row):
+    """
+    通用的 CSV 行数据转换为模型实例。
+    model_cls: 数据模型类
+    field_list: 字段名列表，对应 CSV 列的顺序
+    row: CSV 文件中一行数据（列表）
+    """
+    data = { field: row[idx] for idx, field in enumerate(field_list) }
+    return model_cls(**data)
+# ----------------- 1. PageList CSV 导入 -----------------
+@app.route('/import_csv/pagelist', methods=['POST'])
+def import_csv_pagelist():
+    # CSV 列序：NAME, LABEL
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)  # 跳过标题行
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 2:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            # 构造实例（无需外键验证）
+            new_item = PageList(
+                NAME=row[0],
+                LABEL=row[1]
+            )
+            new_items.append(new_item)
+
+        if error_rows:
+            # 若存在错误，则返回错误，不做任何插入
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        # 数据全部有效，批量添加
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'PageList CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 PageList CSV 出错'+str(e), 'error': str(e)}), 500
+
+# ----------------- 2. Object CSV 导入 -----------------
+@app.route('/import_csv/object', methods=['POST'])
+def import_csv_object():
+    # CSV 列序：NAME, LABEL, TABLE_NAME
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 3:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            new_item = Object(
+                NAME=row[0],
+                LABEL=row[1],
+                TABLE_NAME=row[2]
+            )
+            new_items.append(new_item)
+
+        if error_rows:
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'Object CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 Object CSV 出错'+str(e), 'error': str(e)}), 500
+
+# ----------------- 3. ObjectField CSV 导入 -----------------
+@app.route('/import_csv/object_field', methods=['POST'])
+def import_csv_object_field():
+    # CSV 列序：OBJECT_ID, NAME, LABEL, TYPE
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 4:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            # 验证外键：OBJECT_ID 必须存在且未软删除
+            obj = Object.query.filter_by(ID=row[0], DELETED='0').first()
+            if not obj:
+                error_rows.append({'row': idx, 'data': row, 'error': '外键 OBJECT_ID 不存在'})
+                continue
+
+            new_item = ObjectField(
+                OBJECT_ID=row[0],
+                NAME=row[1],
+                LABEL=row[2],
+                TYPE=row[3]
+            )
+            new_items.append(new_item)
+
+
+        if error_rows:
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'ObjectField CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 ObjectField CSV 出错'+str(e), 'error': str(e)}), 500
+
+# ----------------- 4. PageListField CSV 导入 -----------------
+@app.route('/import_csv/page_list_field', methods=['POST'])
+def import_csv_page_list_field():
+    # CSV 列序：NAME, OBJECT_FIELD_ID, PAGE_LIST_ID, HIDDEN, TYPE
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 5:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            # 验证外键：OBJECT_FIELD_ID 与 PAGE_LIST_ID 必须存在且未软删除
+            obj_field = ObjectField.query.filter_by(ID=row[1], DELETED='0').first()
+            page_list = PageList.query.filter_by(ID=row[2], DELETED='0').first()
+            missing = []
+            if not obj_field:
+                missing.append('OBJECT_FIELD_ID')
+            if not page_list:
+                missing.append('PAGE_LIST_ID')
+            if missing:
+                error_rows.append({
+                    'row': idx,
+                    'data': row,
+                    'error': '外键不存在: ' + ', '.join(missing)
+                })
+                continue
+
+            new_item = PageListField(
+                NAME=row[0],
+                OBJECT_FIELD_ID=row[1],
+                PAGE_LIST_ID=row[2],
+                HIDDEN=row[3],
+                TYPE=row[4]
+            )
+            new_items.append(new_item)
+
+        if error_rows:
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'PageListField CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 PageListField CSV 出错'+str(e), 'error': str(e)}), 500
+
+# ----------------- 5. PageLayout CSV 导入 -----------------
+@app.route('/import_csv/page_layout', methods=['POST'])
+def import_csv_page_layout():
+    # CSV 列序：NAME, PAGE_LIST_ID
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 2:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            # 验证外键：PAGE_LIST_ID 必须存在且未软删除
+            page_list = PageList.query.filter_by(ID=row[1], DELETED='0').first()
+            if not page_list:
+                error_rows.append({'row': idx, 'data': row, 'error': '外键 PAGE_LIST_ID 不存在'})
+                continue
+
+            new_item = PageLayout(
+                NAME=row[0],
+                PAGE_LIST_ID=row[1]
+            )
+            new_items.append(new_item)
+
+        if error_rows:
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'PageLayout CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 PageLayout CSV 出错'+str(e), 'error': str(e)}), 500
+
+# ----------------- 6. PageLayoutField CSV 导入 -----------------
+@app.route('/import_csv/page_layout_field', methods=['POST'])
+def import_csv_page_layout_field():
+    # CSV 列序：NAME, LABEL, PAGE_LAYOUT_ID, OBJECT_FIELD_ID, TYPE
+    if 'file' not in request.files:
+        return jsonify({'message': '未找到文件'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'message': '未选择文件'}), 400
+
+    try:
+        stream = get_decoded_stream(file)
+        csv_reader = csv.reader(stream)
+        next(csv_reader)
+
+        new_items = []
+        error_rows = []
+        for idx, row in enumerate(csv_reader, start=2):
+            if len(row) < 5:
+                error_rows.append({'row': idx, 'error': '列数不足'})
+                continue
+
+            # 验证外键：PAGE_LAYOUT_ID 与 OBJECT_FIELD_ID 必须存在且未软删除
+            page_layout = PageLayout.query.filter_by(ID=row[2], DELETED='0').first()
+            obj_field = ObjectField.query.filter_by(ID=row[3], DELETED='0').first()
+            missing = []
+            if not page_layout:
+                missing.append('PAGE_LAYOUT_ID')
+            if not obj_field:
+                missing.append('OBJECT_FIELD_ID')
+            if missing:
+                error_rows.append({
+                    'row': idx,
+                    'data': row,
+                    'error': '外键不存在: ' + ', '.join(missing)
+                })
+                continue
+
+            new_item = PageLayoutField(
+                NAME=row[0],
+                LABEL=row[1],
+                PAGE_LAYOUT_ID=row[2],
+                OBJECT_FIELD_ID=row[3],
+                TYPE=row[4]
+            )
+            new_items.append(new_item)
+
+        if error_rows:
+            return jsonify({'message': 'CSV 数据存在错误，未执行导入'+str(error_rows), 'errors': error_rows}), 400
+
+        for item in new_items:
+            db.session.add(item)
+        db.session.commit()
+        return jsonify({'message': f'PageLayoutField CSV 导入成功，共导入 {len(new_items)} 条记录'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '导入 PageLayoutField CSV 出错'+str(e),'error': str(e)}), 500
+
+
+# ----------------- 导出通用工具函数 -----------------
+def generate_csv_response(model_cls, filename):
+    try:
+        # 查询所有未删除的记录
+        query = model_cls.query.filter_by(DELETED='0')
+        items = query.all()
+
+        # 生成CSV内容
+        output = StringIO()
+        writer = csv.writer(output)
+
+        # 根据模型类获取字段列表
+        if model_cls == PageList:
+            headers = ['ID', 'NAME', 'LABEL']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.NAME, item.LABEL])
+        elif model_cls == Object:
+            headers = ['ID', 'NAME', 'LABEL', 'TABLE_NAME']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.NAME, item.LABEL, item.TABLE_NAME])
+        elif model_cls == ObjectField:
+            headers = ['ID', 'OBJECT_ID', 'NAME', 'LABEL', 'TYPE']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.OBJECT_ID, item.NAME, item.LABEL, item.TYPE])
+        elif model_cls == PageListField:
+            headers = ['ID', 'NAME', 'OBJECT_FIELD_ID', 'PAGE_LIST_ID', 'HIDDEN', 'TYPE']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.NAME, item.OBJECT_FIELD_ID,
+                               item.PAGE_LIST_ID, item.HIDDEN, item.TYPE])
+        elif model_cls == PageLayout:
+            headers = ['ID', 'NAME', 'PAGE_LIST_ID']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.NAME, item.PAGE_LIST_ID])
+        elif model_cls == PageLayoutField:
+            headers = ['ID', 'NAME', 'LABEL', 'PAGE_LAYOUT_ID', 'OBJECT_FIELD_ID', 'TYPE']
+            writer.writerow(headers)
+            for item in items:
+                writer.writerow([item.ID, item.NAME, item.LABEL,
+                               item.PAGE_LAYOUT_ID, item.OBJECT_FIELD_ID, item.TYPE])
+
+        # 创建响应对象
+        response = Response(
+            output.getvalue(),
+            mimetype="text/csv",
+            headers={
+                "Content-disposition": f"attachment; filename={filename}",
+                "Content-type": "text/csv; charset=utf-8"
+            }
+        )
+        return response
+
+    except Exception as e:
+        return jsonify({'message': f'导出失败: {str(e)}'}), 500
+
+# ----------------- 1. PageList CSV 导出 -----------------
+@app.route('/export_csv/pagelist', methods=['GET'])
+def export_csv_pagelist():
+    return generate_csv_response(PageList, 'pagelist_export.csv')
+
+# ----------------- 2. Object CSV 导出 -----------------
+@app.route('/export_csv/object', methods=['GET'])
+def export_csv_object():
+    return generate_csv_response(Object, 'object_export.csv')
+
+# ----------------- 3. ObjectField CSV 导出 -----------------
+@app.route('/export_csv/object_field', methods=['GET'])
+def export_csv_object_field():
+    return generate_csv_response(ObjectField, 'object_field_export.csv')
+
+# ----------------- 4. PageListField CSV 导出 -----------------
+@app.route('/export_csv/page_list_field', methods=['GET'])
+def export_csv_page_list_field():
+    return generate_csv_response(PageListField, 'page_list_field_export.csv')
+
+# ----------------- 5. PageLayout CSV 导出 -----------------
+@app.route('/export_csv/page_layout', methods=['GET'])
+def export_csv_page_layout():
+    return generate_csv_response(PageLayout, 'page_layout_export.csv')
+
+# ----------------- 6. PageLayoutField CSV 导出 -----------------
+@app.route('/export_csv/page_layout_field', methods=['GET'])
+def export_csv_page_layout_field():
+    return generate_csv_response(PageLayoutField, 'page_layout_field_export.csv')
 if __name__ == '__main__':
     app.run(debug=True)
